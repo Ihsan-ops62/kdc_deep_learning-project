@@ -27,7 +27,7 @@ class Training:
             ),
             loss=tf.keras.losses.CategoricalCrossentropy(),
             metrics=["accuracy"],
-            run_eagerly=True,
+            run_eagerly=False,
         )
 
     def train_valid_generator(self):

@@ -1,3 +1,10 @@
+import tensorflow as tf
+
+# Keras model.fit needs TensorFlow eager execution. Enable it before importing
+# project modules or building any TensorFlow graphs if the environment disabled it.
+if not tf.executing_eagerly():
+    tf.compat.v1.enable_eager_execution()
+
 from src.cnnClassifier import logger
 from src.cnnClassifier.pipeline.stage_01_data_ingestion import DataIngestionTrainingPipeline
 from src.cnnClassifier.pipeline.stage_02_prepare_base_models import PrepareBaseModelTrainingPipeline

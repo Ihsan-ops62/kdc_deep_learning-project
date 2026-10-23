@@ -2,6 +2,7 @@ tensorflow
 pandas 
 dvc
 mlflow
+python-dotenv
 notebook
 numpy
 matplotlib

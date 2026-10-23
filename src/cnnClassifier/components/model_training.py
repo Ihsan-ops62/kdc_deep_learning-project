@@ -4,7 +4,11 @@ from zipfile import ZipFile
 import tensorflow as tf
 import time
 from pathlib import Path
+from dotenv import load_dotenv
+import mlflow
 from cnnClassifier.entity.config_entity import TrainingConfig
+
+load_dotenv()
 
 
 class Training:
@@ -82,16 +86,38 @@ class Training:
         self.steps_per_epoch = self.train_generator.samples // self.train_generator.batch_size
         self.validation_steps = self.valid_generator.samples // self.valid_generator.batch_size
 
-        self.model.fit(
-            self.train_generator,
-            epochs=self.config.params_epochs,
-            steps_per_epoch=self.steps_per_epoch,
-            validation_steps=self.validation_steps,
-            validation_data=self.valid_generator
-        )
+        tracking_uri = os.getenv("MLFLOW_TRACKING_URI")
+        if not tracking_uri:
+            raise RuntimeError("MLFLOW_TRACKING_URI is missing; configure it in the project .env file.")
+        mlflow.set_tracking_uri(tracking_uri)
+        mlflow.set_experiment("kidney-disease-classification")
 
-        self.save_model(
-            path=self.config.trained_model_path,
-            model=self.model
-        )
+        with mlflow.start_run(run_name="kidney-cnn-training"):
+            mlflow.log_params({
+                "epochs": self.config.params_epochs,
+                "batch_size": self.config.params_batch_size,
+                "learning_rate": self.config.params_learning_rate,
+                "image_size": str(self.config.params_image_size),
+                "augmentation": self.config.params_is_augmentation,
+                "classes": self.train_generator.num_classes,
+                "train_images": self.train_generator.samples,
+                "validation_images": self.valid_generator.samples,
+            })
+
+            history = self.model.fit(
+                self.train_generator,
+                epochs=self.config.params_epochs,
+                steps_per_epoch=self.steps_per_epoch,
+                validation_steps=self.validation_steps,
+                validation_data=self.valid_generator,
+            )
+
+            for metric_name, values in history.history.items():
+                for epoch, value in enumerate(values, start=1):
+                    mlflow.log_metric(metric_name, float(value), step=epoch)
+
+            self.save_model(
+                path=self.config.trained_model_path,
+                model=self.model,
+            )
 

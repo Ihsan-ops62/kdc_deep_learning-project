@@ -161,3 +161,9 @@ cython_debug/
 #.idea/
 
 artifacts/*
+model/
+artifacts/
+.env
+mlruns/
+
+*.egg-info/

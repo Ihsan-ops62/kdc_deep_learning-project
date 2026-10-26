@@ -1,11 +1,13 @@
-name: workflow
+name: Kidney classifier CI/CD
 
 on:
   push:
     branches:
+      - master
       - main
     paths-ignore:
       - 'README.md'
+  workflow_dispatch:
 
 permissions:
   id-token: write

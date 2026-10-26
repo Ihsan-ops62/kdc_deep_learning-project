@@ -1,0 +1,298 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#081322">
+  <title>KidneyScan | CT Image Classifier</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #081322;
+      --panel: #101f32;
+      --panel-soft: #14263b;
+      --line: rgba(185, 211, 238, .14);
+      --text: #f2f7fc;
+      --muted: #9db0c5;
+      --accent: #69e1d0;
+      --blue: #73aaff;
+      --danger: #ff9b9b;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body {
+      min-height: 100vh; margin: 0; color: var(--text);
+      background: radial-gradient(ellipse at 18% 0%, rgba(63, 113, 168, .22), transparent 42%), var(--bg);
+    }
+    .shell { width: min(1100px, calc(100% - 40px)); margin: 0 auto; padding: 28px 0 36px; }
+    header { display: flex; align-items: center; justify-content: space-between; gap: 20px; margin-bottom: 54px; }
+    .brand { display: flex; align-items: center; gap: 12px; color: var(--text); text-decoration: none; font-weight: 750; letter-spacing: -.03em; }
+    .brand-mark { display: grid; width: 40px; height: 40px; place-items: center; border: 1px solid rgba(105,225,208,.35); border-radius: 13px; background: rgba(105,225,208,.1); color: var(--accent); }
+    .brand-mark svg { width: 23px; height: 23px; }
+    .header-note { color: var(--muted); font-size: 13px; }
+    .hero { max-width: 760px; margin: 0 auto 30px; text-align: center; }
+    .eyebrow { display: inline-flex; align-items: center; gap: 8px; margin-bottom: 17px; color: var(--accent); font-size: 12px; font-weight: 750; letter-spacing: .12em; text-transform: uppercase; }
+    .eyebrow::before { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); content: ""; box-shadow: 0 0 14px rgba(105,225,208,.65); }
+    h1 { margin: 0; font-size: clamp(34px, 6vw, 58px); line-height: 1.03; letter-spacing: -.055em; }
+    .hero p { max-width: 600px; margin: 18px auto 0; color: var(--muted); font-size: 16px; line-height: 1.7; }
+    .class-list { display: flex; flex-wrap: wrap; justify-content: center; gap: 9px; margin: 22px 0 0; padding: 0; list-style: none; }
+    .class-list li { border: 1px solid var(--line); border-radius: 999px; padding: 7px 12px; background: rgba(255,255,255,.025); color: #d5e3f2; font-size: 12px; }
+    .workspace { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(320px, .95fr); gap: 18px; max-width: 930px; margin: 0 auto; }
+    .card { min-width: 0; border: 1px solid var(--line); border-radius: 20px; background: linear-gradient(160deg, rgba(21,39,60,.96), rgba(13,27,44,.96)); box-shadow: 0 24px 70px rgba(0,0,0,.2); }
+    .upload-card { padding: 22px; }
+    .card-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 17px; }
+    .card-heading h2 { margin: 0; font-size: 15px; letter-spacing: -.01em; }
+    .step { color: var(--muted); font-size: 12px; }
+    .dropzone { position: relative; display: grid; min-height: 330px; overflow: hidden; place-items: center; border: 1px dashed rgba(146,177,210,.42); border-radius: 15px; background: rgba(5,14,25,.42); text-align: center; transition: border-color .18s, background .18s; }
+    .dropzone.dragging { border-color: var(--accent); background: rgba(105,225,208,.08); }
+    .dropzone.has-image { border-style: solid; border-color: rgba(105,225,208,.36); }
+    .dropzone input { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; }
+    .dropzone:focus-within { outline: 2px solid var(--blue); outline-offset: 3px; }
+    .drop-content { padding: 24px; }
+    .upload-icon { display: grid; width: 58px; height: 58px; margin: 0 auto 16px; place-items: center; border: 1px solid rgba(115,170,255,.25); border-radius: 18px; background: rgba(115,170,255,.1); color: var(--blue); }
+    .upload-icon svg { width: 25px; height: 25px; }
+    .drop-title { margin: 0; font-weight: 700; }
+    .drop-help { margin: 8px 0 0; color: var(--muted); font-size: 13px; line-height: 1.55; }
+    .browse { display: inline-block; margin-top: 17px; padding: 10px 15px; border: 1px solid rgba(115,170,255,.35); border-radius: 10px; background: rgba(115,170,255,.1); color: #c8dcff; font-size: 13px; font-weight: 650; cursor: pointer; }
+    .browse:hover { background: rgba(115,170,255,.17); }
+    .preview { display: none; width: 100%; height: 100%; min-height: 330px; object-fit: contain; background: #07101c; }
+    .dropzone.has-image .preview { display: block; }
+    .dropzone.has-image .drop-content { display: none; }
+    .file-meta { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 39px; color: var(--muted); font-size: 12px; }
+    .file-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .text-button { border: 0; padding: 6px 2px; background: transparent; color: #bdd0e4; font: inherit; cursor: pointer; }
+    .text-button:hover { color: var(--text); }
+    .actions { display: flex; gap: 10px; margin-top: 5px; }
+    button { font: inherit; }
+    .primary, .secondary { min-height: 45px; border-radius: 11px; font-size: 14px; font-weight: 700; cursor: pointer; transition: transform .15s, opacity .15s, background .15s; }
+    .primary { flex: 1; border: 0; background: linear-gradient(100deg, #6de1cf, #80eedb); color: #09201e; box-shadow: 0 8px 24px rgba(70,208,188,.12); }
+    .secondary { padding: 0 17px; border: 1px solid var(--line); background: rgba(255,255,255,.035); color: var(--text); }
+    .primary:not(:disabled):hover, .secondary:not(:disabled):hover { transform: translateY(-1px); }
+    button:disabled { opacity: .43; cursor: not-allowed; }
+    .status { min-height: 20px; margin: 12px 0 0; color: var(--muted); font-size: 12px; line-height: 1.5; }
+    .status.error { color: var(--danger); }
+    .result-card { display: flex; min-height: 100%; flex-direction: column; padding: 22px; }
+    .result-card .card-heading { margin-bottom: 20px; }
+    .result-placeholder { display: grid; flex: 1; min-height: 285px; place-content: center; justify-items: center; padding: 24px; border: 1px solid rgba(185,211,238,.08); border-radius: 15px; background: rgba(5,14,25,.25); text-align: center; }
+    .placeholder-icon { display: grid; width: 54px; height: 54px; margin-bottom: 14px; place-items: center; border-radius: 17px; background: rgba(255,255,255,.045); color: #91a9c3; }
+    .placeholder-icon svg { width: 24px; }
+    .result-placeholder p { max-width: 230px; margin: 0; color: var(--muted); font-size: 13px; line-height: 1.6; }
+    .result-content { display: none; }
+    .result-content.visible { display: block; }
+    .result-badge { display: inline-flex; align-items: center; gap: 8px; margin-bottom: 14px; border: 1px solid rgba(105,225,208,.23); border-radius: 999px; padding: 6px 10px; background: rgba(105,225,208,.08); color: var(--accent); font-size: 11px; font-weight: 750; letter-spacing: .07em; text-transform: uppercase; }
+    .result-badge::before { width: 6px; height: 6px; border-radius: 50%; background: currentColor; content: ""; }
+    .result-name { margin: 0; font-size: clamp(30px, 4vw, 40px); line-height: 1.05; letter-spacing: -.04em; }
+    .confidence-line { margin: 9px 0 25px; color: var(--muted); font-size: 13px; }
+    .confidence-line strong { color: var(--text); font-weight: 700; }
+    .scores-title { margin: 0 0 14px; color: #dce8f4; font-size: 12px; font-weight: 700; }
+    .score-row { margin: 0 0 13px; }
+    .score-label { display: flex; justify-content: space-between; gap: 12px; margin-bottom: 7px; color: #c0cede; font-size: 12px; }
+    .score-label strong { color: var(--text); font-weight: 650; }
+    .track { height: 6px; overflow: hidden; border-radius: 99px; background: rgba(255,255,255,.08); }
+    .fill { width: 0; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #64b8ff, #6de1cf); transition: width .45s ease; }
+    .disclaimer { margin: auto 0 0; padding-top: 20px; color: #8095aa; font-size: 11px; line-height: 1.6; }
+    footer { max-width: 930px; margin: 19px auto 0; color: #71869d; font-size: 11px; line-height: 1.6; text-align: center; }
+    @media (max-width: 760px) {
+      .shell { width: min(100% - 28px, 560px); padding-top: 18px; }
+      header { margin-bottom: 38px; }
+      .header-note { display: none; }
+      .hero { margin-bottom: 23px; }
+      .hero p { font-size: 14px; }
+      .workspace { grid-template-columns: 1fr; }
+      .dropzone, .preview { min-height: 270px; }
+      .result-placeholder { min-height: 185px; }
+      .result-card { min-height: 0; }
+    }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; } }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <header>
+      <a class="brand" href="/" aria-label="KidneyScan home">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M8.4 3.5c-2.8 0-4.6 2.5-4.6 5.7 0 3.4 1.6 6.1 4.2 6.1 1.7 0 2.8-1.3 2.8-3.5V7.1c0-2.2-1-3.6-2.4-3.6Zm7.2 0c2.8 0 4.6 2.5 4.6 5.7 0 3.4-1.6 6.1-4.2 6.1-1.7 0-2.8-1.3-2.8-3.5V7.1c0-2.2 1-3.6 2.4-3.6ZM12 12v8m-3-2.5c.7 1.2 1.7 1.8 3 1.8s2.3-.6 3-1.8" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </span>
+        <span>KidneyScan</span>
+      </a>
+      <span class="header-note">CT image classification demo</span>
+    </header>
+
+    <section class="hero" aria-labelledby="page-title">
+      <div class="eyebrow">AI-assisted image analysis</div>
+      <h1 id="page-title">A clearer look at<br>kidney CT images.</h1>
+      <p>Upload one kidney CT image to see which of the model’s four trained categories scores highest.</p>
+      <ul class="class-list" aria-label="Available categories">
+        <li>Cyst</li><li>Normal</li><li>Stone</li><li>Tumor</li>
+      </ul>
+    </section>
+
+    <section class="workspace" aria-label="Image classification">
+      <div class="card upload-card">
+        <div class="card-heading"><h2>Upload an image</h2><span class="step">Step 1 of 2</span></div>
+        <label class="dropzone" id="dropzone" for="image-input">
+          <input id="image-input" name="image" type="file" accept="image/png,image/jpeg,image/webp,image/bmp" aria-label="Choose a kidney CT image">
+          <span class="drop-content">
+            <span class="upload-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M12 16V4m0 0L7.5 8.5M12 4l4.5 4.5M5 14.5v3A2.5 2.5 0 0 0 7.5 20h9a2.5 2.5 0 0 0 2.5-2.5v-3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+            <p class="drop-title">Drop your image here</p>
+            <p class="drop-help">or choose a file from your device<br>PNG, JPG, WEBP or BMP · max 12 MB</p>
+            <span class="browse">Choose image</span>
+          </span>
+          <img class="preview" id="preview" alt="Selected kidney CT image preview">
+        </label>
+        <div class="file-meta"><span class="file-name" id="file-name">No image selected</span><button class="text-button" id="remove-image" type="button" hidden>Remove</button></div>
+        <div class="actions">
+          <button class="primary" id="predict-button" type="button" disabled>Analyze image <span aria-hidden="true">→</span></button>
+        </div>
+        <p class="status" id="status" aria-live="polite">Choose an image to begin.</p>
+      </div>
+
+      <div class="card result-card" aria-live="polite">
+        <div class="card-heading"><h2>Prediction</h2><span class="step">Step 2 of 2</span></div>
+        <div class="result-placeholder" id="result-placeholder">
+          <span class="placeholder-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M4 6.5A2.5 2.5 0 0 1 6.5 4h11A2.5 2.5 0 0 1 20 6.5v11a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 17.5v-11Z" stroke="currentColor" stroke-width="1.5"/><circle cx="9" cy="9" r="1.5" stroke="currentColor" stroke-width="1.5"/><path d="m5 17 4.5-4 3 2 2.5-2 4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+          <p>Your result and category scores will appear here after analysis.</p>
+        </div>
+        <div class="result-content" id="result-content">
+          <span class="result-badge">Top model result</span>
+          <h3 class="result-name" id="result-name">—</h3>
+          <p class="confidence-line">Model score <strong id="confidence">—</strong></p>
+          <h4 class="scores-title">Scores across all categories</h4>
+          <div id="scores"></div>
+        </div>
+        <p class="disclaimer">For research and educational use only. This model output is not a medical diagnosis and should not guide care decisions.</p>
+      </div>
+    </section>
+    <footer>Images are analyzed by the model running with this application. Use de-identified images and follow your organization’s data-handling rules.</footer>
+  </main>
+
+  <script>
+    (function () {
+      const input = document.getElementById("image-input");
+      const dropzone = document.getElementById("dropzone");
+      const preview = document.getElementById("preview");
+      const fileName = document.getElementById("file-name");
+      const removeButton = document.getElementById("remove-image");
+      const predictButton = document.getElementById("predict-button");
+      const status = document.getElementById("status");
+      const resultPlaceholder = document.getElementById("result-placeholder");
+      const resultContent = document.getElementById("result-content");
+      const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/bmp"];
+      let selectedFile = null;
+      let previewUrl = null;
+
+      function setStatus(message, isError) {
+        status.textContent = message;
+        status.classList.toggle("error", Boolean(isError));
+      }
+
+      function selectFile(file) {
+        if (!file) return;
+        if (!allowedTypes.includes(file.type)) {
+          setStatus("Choose a PNG, JPG, WEBP or BMP image.", true);
+          return;
+        }
+        if (file.size > 12 * 1024 * 1024) {
+          setStatus("This image is larger than 12 MB. Choose a smaller image.", true);
+          return;
+        }
+        if (previewUrl) URL.revokeObjectURL(previewUrl);
+        selectedFile = file;
+        previewUrl = URL.createObjectURL(file);
+        preview.src = previewUrl;
+        dropzone.classList.add("has-image");
+        fileName.textContent = file.name;
+        removeButton.hidden = false;
+        predictButton.disabled = false;
+        resultPlaceholder.hidden = false;
+        resultContent.classList.remove("visible");
+        setStatus("Image ready. Select Analyze image to run the model.", false);
+      }
+
+      function clearFile() {
+        selectedFile = null;
+        input.value = "";
+        if (previewUrl) URL.revokeObjectURL(previewUrl);
+        previewUrl = null;
+        preview.removeAttribute("src");
+        dropzone.classList.remove("has-image");
+        fileName.textContent = "No image selected";
+        removeButton.hidden = true;
+        predictButton.disabled = true;
+        resultPlaceholder.hidden = false;
+        resultContent.classList.remove("visible");
+        document.getElementById("scores").replaceChildren();
+        setStatus("Choose an image to begin.", false);
+      }
+
+      function showResult(result) {
+        document.getElementById("result-name").textContent = result.prediction;
+        document.getElementById("confidence").textContent = (result.confidence * 100).toFixed(1) + "%";
+        const scores = document.getElementById("scores");
+        scores.replaceChildren();
+        result.scores.forEach(function (item) {
+          const row = document.createElement("div");
+          row.className = "score-row";
+          const label = document.createElement("div");
+          label.className = "score-label";
+          const name = document.createElement("span");
+          name.textContent = item.class_name;
+          const value = document.createElement("strong");
+          value.textContent = (item.score * 100).toFixed(1) + "%";
+          label.append(name, value);
+          const track = document.createElement("div");
+          track.className = "track";
+          const fill = document.createElement("div");
+          fill.className = "fill";
+          fill.style.width = Math.max(0, Math.min(100, item.score * 100)) + "%";
+          track.appendChild(fill);
+          row.append(label, track);
+          scores.appendChild(row);
+        });
+        resultPlaceholder.hidden = true;
+        resultContent.classList.add("visible");
+      }
+
+      input.addEventListener("change", function () { selectFile(input.files && input.files[0]); });
+      removeButton.addEventListener("click", clearFile);
+      ["dragenter", "dragover"].forEach(function (eventName) {
+        dropzone.addEventListener(eventName, function (event) {
+          event.preventDefault();
+          dropzone.classList.add("dragging");
+        });
+      });
+      ["dragleave", "drop"].forEach(function (eventName) {
+        dropzone.addEventListener(eventName, function (event) {
+          event.preventDefault();
+          dropzone.classList.remove("dragging");
+        });
+      });
+      dropzone.addEventListener("drop", function (event) {
+        const file = event.dataTransfer && event.dataTransfer.files[0];
+        selectFile(file);
+      });
+
+      predictButton.addEventListener("click", async function () {
+        if (!selectedFile) return;
+        const data = new FormData();
+        data.append("image", selectedFile);
+        predictButton.disabled = true;
+        predictButton.textContent = "Analyzing…";
+        setStatus("Preparing image and running the classifier…", false);
+        try {
+          const response = await fetch("/predict", { method: "POST", body: data });
+          const payload = await response.json();
+          if (!response.ok) throw new Error(payload.error || "Prediction failed.");
+          showResult(payload);
+          setStatus("Analysis complete.", false);
+        } catch (error) {
+          setStatus(error.message || "Could not reach the prediction service. Try again.", true);
+        } finally {
+          predictButton.disabled = !selectedFile;
+          predictButton.innerHTML = 'Analyze image <span aria-hidden="true">→</span>';
+        }
+      });
+    }());
+  </script>
+</body>
+</html>

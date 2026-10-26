@@ -79,6 +79,8 @@
     .result-placeholder p { max-width: 230px; margin: 0; color: var(--muted); font-size: 13px; line-height: 1.6; }
     .result-content { display: none; }
     .result-content.visible { display: block; }
+    .result-image-frame { display: grid; height: 190px; margin-bottom: 18px; overflow: hidden; place-items: center; border: 1px solid rgba(185,211,238,.1); border-radius: 13px; background: #07101c; }
+    .result-image-frame img { display: block; width: 100%; height: 100%; object-fit: contain; }
     .result-badge { display: inline-flex; align-items: center; gap: 8px; margin-bottom: 14px; border: 1px solid rgba(105,225,208,.23); border-radius: 999px; padding: 6px 10px; background: rgba(105,225,208,.08); color: var(--accent); font-size: 11px; font-weight: 750; letter-spacing: .07em; text-transform: uppercase; }
     .result-badge::before { width: 6px; height: 6px; border-radius: 50%; background: currentColor; content: ""; }
     .result-name { margin: 0; font-size: clamp(30px, 4vw, 40px); line-height: 1.05; letter-spacing: -.04em; }
@@ -151,10 +153,11 @@
         <div class="card-heading"><h2>Prediction</h2><span class="step">Step 2 of 2</span></div>
         <div class="result-placeholder" id="result-placeholder">
           <span class="placeholder-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M4 6.5A2.5 2.5 0 0 1 6.5 4h11A2.5 2.5 0 0 1 20 6.5v11a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 17.5v-11Z" stroke="currentColor" stroke-width="1.5"/><circle cx="9" cy="9" r="1.5" stroke="currentColor" stroke-width="1.5"/><path d="m5 17 4.5-4 3 2 2.5-2 4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
-          <p>Your result and category scores will appear here after analysis.</p>
+          <p id="placeholder-message">Your result and category scores will appear here after analysis.</p>
         </div>
         <div class="result-content" id="result-content">
           <span class="result-badge">Top model result</span>
+          <div class="result-image-frame"><img id="result-image" alt="Analyzed kidney CT image"></div>
           <h3 class="result-name" id="result-name">—</h3>
           <p class="confidence-line">Model score <strong id="confidence">—</strong></p>
           <h4 class="scores-title">Scores across all categories</h4>
@@ -206,6 +209,7 @@
         predictButton.disabled = false;
         resultPlaceholder.hidden = false;
         resultContent.classList.remove("visible");
+        document.getElementById("placeholder-message").textContent = "Your result and category scores will appear here after analysis.";
         setStatus("Image ready. Select Analyze image to run the model.", false);
       }
 
@@ -221,11 +225,16 @@
         predictButton.disabled = true;
         resultPlaceholder.hidden = false;
         resultContent.classList.remove("visible");
+        document.getElementById("placeholder-message").textContent = "Your result and category scores will appear here after analysis.";
         document.getElementById("scores").replaceChildren();
         setStatus("Choose an image to begin.", false);
       }
 
       function showResult(result) {
+        if (!result || typeof result.prediction !== "string" || !Array.isArray(result.scores)) {
+          throw new Error("The prediction service returned an unexpected response.");
+        }
+        document.getElementById("result-image").src = previewUrl;
         document.getElementById("result-name").textContent = result.prediction;
         document.getElementById("confidence").textContent = (result.confidence * 100).toFixed(1) + "%";
         const scores = document.getElementById("scores");
@@ -286,6 +295,9 @@
           showResult(payload);
           setStatus("Analysis complete.", false);
         } catch (error) {
+          resultPlaceholder.hidden = false;
+          resultContent.classList.remove("visible");
+          document.getElementById("placeholder-message").textContent = error.message || "Prediction failed. Please try again.";
           setStatus(error.message || "Could not reach the prediction service. Try again.", true);
         } finally {
           predictButton.disabled = !selectedFile;

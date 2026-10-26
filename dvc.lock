@@ -36,13 +36,13 @@ stages:
         - 224
         - 3
         INCLUDE_TOP: false
-        LEARNING_RATE: 0.0001
+        LEARNING_RATE: 5e-05
         WEIGHTS: imagenet
     outs:
     - path: artifacts/prepare_base_model
       hash: md5
-      md5: 44624b4bb1c9a5a4b5307b28e95b7b09.dir
-      size: 118274216
+      md5: d710635bd99c7832d93422b004bb3989.dir
+      size: 118276336
       nfiles: 2
   training:
     cmd: python src/cnnClassifier/pipeline/stage_03_model_training.py

@@ -80,3 +80,6 @@ Open [http://127.0.0.1:8080](http://127.0.0.1:8080), choose a CT image, and sele
 ## GitHub Actions and AWS
 
 The workflow in `.github/workflows/main.yml` builds a Docker image, pushes it to Amazon ECR, and runs deployment commands on a self-hosted GitHub Actions runner. Configure the repository secrets used by the workflow, including `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_REGION`, `ECR_REPOSITORY_NAME`, and `AWS_ECR_LOGIN_URI`. The self-hosted runner needs Docker and access to the target AWS resources.
+
+
+Ihsan Ullah

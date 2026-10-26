@@ -91,6 +91,8 @@ class Training:
                 "batch_size": self.config.params_batch_size,
                 "learning_rate": self.config.params_learning_rate,
                 "optimizer": "Adam",
+                "dropout": 0.5,
+                "fine_tuned_layers": "block5",
                 "image_size": str(self.config.params_image_size),
                 "augmentation": self.config.params_is_augmentation,
                 "classes": self.train_generator.num_classes,
@@ -98,12 +100,37 @@ class Training:
                 "validation_images": self.valid_generator.samples,
             })
 
+            callbacks = [
+                # Saves the best model so far, so a crash or Ctrl+C doesn't lose everything
+                tf.keras.callbacks.ModelCheckpoint(
+                    filepath=str(self.config.trained_model_path),
+                    monitor="val_loss",
+                    save_best_only=True,
+                ),
+                # Halves the learning rate when val_loss stops improving
+                tf.keras.callbacks.ReduceLROnPlateau(
+                    monitor="val_loss",
+                    factor=0.5,
+                    patience=1,
+                    min_lr=1e-7,
+                    verbose=1,
+                ),
+                # Stops training once val_loss stops improving and keeps the best weights
+                tf.keras.callbacks.EarlyStopping(
+                    monitor="val_loss",
+                    patience=4,
+                    restore_best_weights=True,
+                    verbose=1,
+                ),
+            ]
+
             history = self.model.fit(
                 self.train_generator,
                 epochs=self.config.params_epochs,
                 steps_per_epoch=self.steps_per_epoch,
                 validation_steps=self.validation_steps,
                 validation_data=self.valid_generator,
+                callbacks=callbacks,
             )
 
             for metric_name, values in history.history.items():

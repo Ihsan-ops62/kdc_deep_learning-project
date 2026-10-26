@@ -1,8 +1,5 @@
 import os
-import urllib.request as request
-from zipfile import ZipFile
 import tensorflow as tf
-import time
 from pathlib import Path
 from dotenv import load_dotenv
 import mlflow
@@ -15,14 +12,14 @@ class Training:
     def __init__(self, config: TrainingConfig):
         self.config = config
 
-    
     def get_base_model(self):
         self.model = tf.keras.models.load_model(
             self.config.updated_base_model_path,
             compile=False,
         )
+        # Adam converges much faster than plain SGD for VGG16 transfer learning
         self.model.compile(
-            optimizer=tf.keras.optimizers.SGD(
+            optimizer=tf.keras.optimizers.Adam(
                 learning_rate=self.config.params_learning_rate
             ),
             loss=tf.keras.losses.CategoricalCrossentropy(),
@@ -33,7 +30,7 @@ class Training:
     def train_valid_generator(self):
 
         datagenerator_kwargs = dict(
-            rescale = 1./255,
+            rescale=1./255,
             validation_split=0.20
         )
 
@@ -55,13 +52,13 @@ class Training:
         )
 
         if self.config.params_is_augmentation:
+            # Gentler augmentation, better suited to CT scans
             train_datagenerator = tf.keras.preprocessing.image.ImageDataGenerator(
-                rotation_range=40,
+                rotation_range=10,
                 horizontal_flip=True,
-                width_shift_range=0.2,
-                height_shift_range=0.2,
-                shear_range=0.2,
-                zoom_range=0.2,
+                width_shift_range=0.1,
+                height_shift_range=0.1,
+                zoom_range=0.1,
                 **datagenerator_kwargs
             )
         else:
@@ -74,14 +71,10 @@ class Training:
             **dataflow_kwargs
         )
 
-    
     @staticmethod
     def save_model(path: Path, model: tf.keras.Model):
         model.save(path)
 
-
-
-    
     def train(self):
         self.steps_per_epoch = self.train_generator.samples // self.train_generator.batch_size
         self.validation_steps = self.valid_generator.samples // self.valid_generator.batch_size
@@ -97,6 +90,7 @@ class Training:
                 "epochs": self.config.params_epochs,
                 "batch_size": self.config.params_batch_size,
                 "learning_rate": self.config.params_learning_rate,
+                "optimizer": "Adam",
                 "image_size": str(self.config.params_image_size),
                 "augmentation": self.config.params_is_augmentation,
                 "classes": self.train_generator.num_classes,
@@ -120,4 +114,3 @@ class Training:
                 path=self.config.trained_model_path,
                 model=self.model,
             )
-

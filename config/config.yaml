@@ -5,7 +5,7 @@ data_ingestion:
   source_URL: https://drive.google.com/file/d/1NAtOCpHwncCg7tttTZi3EF1o3otyv6cl/view?usp=sharing
   local_data_file: artifacts/data_ingestion/data.zip
   unzip_dir: artifacts/data_ingestion
-  dataset_dir: artifacts/data_ingestion/kedney_ct_scan_images
+  dataset_dir: artifacts/data_ingestion/kidney_ct_scan_image
 
 
 prepare_base_model:
